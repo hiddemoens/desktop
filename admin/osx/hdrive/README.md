@@ -33,7 +33,7 @@ python3 admin/osx/hdrive/update.py --no-fetch
 python3 -m unittest discover -s admin/osx/hdrive/tests -v
 ```
 
-Requires Xcode, existing Apple Development certificate, librsvg/rsvg-convert, Git and Python 3.12. mac-crafter resolves its established Craft dependencies. Build preparation reuses local NextcloudDev launcher approach: Git archive, isolated build sources, rsvg-convert and no signing timestamp for local development. No installed signed app is patched in place.
+Requires Xcode, existing Apple Development certificate, librsvg/rsvg-convert, existing MacPorts Git at `/opt/local/bin/git` and Python 3.12. Updater pins this Git installation so Xcode and launchd use the same approved Keychain credential helper as interactive builds. mac-crafter resolves its established Craft dependencies. Build preparation reuses local NextcloudDev launcher approach: Git archive, isolated build sources, rsvg-convert and no signing timestamp for local development. No installed signed app is patched in place.
 
 ## Rollback
 

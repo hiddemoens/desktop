@@ -22,7 +22,7 @@ def configuration(repo, home):
         'WorkingDirectory': str(repo),
         'StartCalendarInterval': {'Hour': 10, 'Minute': 0},
         'LimitLoadToSessionType': 'Aqua',
-        'EnvironmentVariables': {'PATH': '/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin'},
+        'EnvironmentVariables': {'PATH': '/opt/local/bin:/opt/local/sbin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin'},
         'StandardOutPath': str(logs / 'update.log'),
         'StandardErrorPath': str(logs / 'error.log'),
     }

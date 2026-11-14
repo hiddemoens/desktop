@@ -28,11 +28,12 @@ CLIENT_APPS = {APP, 'NextcloudDev.app'}
 def command(*args, **kwargs):
     env = os.environ.copy()
     env['GIT_TERMINAL_PROMPT'] = '0'
+    env.pop('GIT_EXEC_PATH', None)
     return subprocess.run([str(arg) for arg in args], check=True, env=env, **kwargs)
 
 
 def git(repo, *args):
-    return command('git', '-C', repo, *args, stdout=subprocess.PIPE,
+    return command('/opt/local/bin/git', '-C', repo, *args, stdout=subprocess.PIPE,
                    stderr=subprocess.PIPE, text=True, timeout=120).stdout.strip()
 
 

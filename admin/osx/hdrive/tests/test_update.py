@@ -270,6 +270,14 @@ class UpdateTests(unittest.TestCase):
         self.assertEqual(install.call_args.args[3], built)
         self.assertNotEqual(built, self.git(local, 'rev-parse', 'HEAD'))
 
+    def test_git_uses_normal_keychain_approved_installation(self):
+        updater = load_updater()
+        def command(*args, **kwargs):
+            self.assertEqual(args[0], '/opt/local/bin/git')
+            return subprocess.CompletedProcess(args, 0, stdout='revision\n')
+        with patch.object(updater, 'command', side_effect=command):
+            self.assertEqual(updater.git(self.root, 'rev-parse', 'HEAD'), 'revision')
+
     def test_verifier_requests_full_code_directory_hash(self):
         updater = load_updater()
         import plistlib
