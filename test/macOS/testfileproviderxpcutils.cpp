@@ -63,6 +63,7 @@ bool deferDomainRemoval = false;
 void (^pendingDomainAddition)(NSError *) = nil;
 void (^pendingDomainRemoval)(NSURL *, NSError *) = nil;
 NSMutableArray<NSString *> *addedDomainIdentifiers = nil;
+NSMutableArray<NSString *> *addedDomainDisplayNames = nil;
 NSURL *preservedDataUrl = nil;
 auto domainRemovalCount = 0;
 
@@ -195,6 +196,7 @@ bool waitForBackgroundThread(std::atomic_bool &completed)
 + (void)addDomain:(NSFileProviderDomain *)domain completionHandler:(void (^)(NSError *))completionHandler
 {
     [addedDomainIdentifiers addObject:domain.identifier];
+    [addedDomainDisplayNames addObject:domain.displayName];
     if (deferDomainAddition) {
         pendingDomainAddition = [completionHandler copy];
         return;
@@ -484,6 +486,7 @@ private Q_SLOTS:
         pendingDomainAddition = nil;
         pendingDomainRemoval = nil;
         addedDomainIdentifiers = nil;
+        addedDomainDisplayNames = nil;
         preservedDataUrl = nil;
         deferDomainAddition = false;
         deferDomainRemoval = false;
@@ -629,6 +632,32 @@ private Q_SLOTS:
         if (manager.disconnectCount) {
             QVERIFY([manager.lastDisconnectionReason isEqualToString:@"Test disconnection"]);
         }
+    }
+
+    void hdriveNamesNewAndExistingDomainsWithoutRemovingThem()
+    {
+        installDomainLookupMocks();
+        const auto accountState = addTestAccount();
+        addedDomainIdentifiers = [[NSMutableArray alloc] init];
+        addedDomainDisplayNames = [[NSMutableArray alloc] init];
+        discoveredDomains = @[];
+        auto owner = std::make_unique<OCC::Mac::FileProviderDomainManager>();
+
+        const auto identifier = owner->addDomainForAccount(accountState);
+        QVERIFY(!identifier.isEmpty());
+        QCOMPARE(QString::fromNSString(addedDomainDisplayNames.lastObject), u"hdrive"_s);
+
+        discoveredDomains = @[ [[NSFileProviderDomain alloc] initWithIdentifier:identifier.toNSString() displayName:@"NextcloudDev"] ];
+        owner->reconcileDomainDisplayNames();
+        QCOMPARE(addedDomainIdentifiers.count, 2);
+        QCOMPARE(QString::fromNSString(addedDomainIdentifiers.lastObject), identifier);
+        QCOMPARE(QString::fromNSString(addedDomainDisplayNames.lastObject), u"hdrive"_s);
+        QCOMPARE(domainRemovalCount, 0);
+
+        discoveredDomains = @[ [[NSFileProviderDomain alloc] initWithIdentifier:identifier.toNSString() displayName:@"hdrive"] ];
+        owner->reconcileDomainDisplayNames();
+        QCOMPARE(addedDomainIdentifiers.count, 2);
+        QCOMPARE(domainRemovalCount, 0);
     }
 
     void additionRequiresConfirmedDiscoveryAndReusesUnconfirmedIdentifier()

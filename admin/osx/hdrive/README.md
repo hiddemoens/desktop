@@ -4,7 +4,7 @@
 
 `hdrive` is a personal distribution branch of `hiddemoens/desktop`. Do not open upstream pull requests from this branch. Keep contributor work on separate branches, including `fix/macos-remove-download`.
 
-macOS development builds use approved hdrive logo and `hdriveDev.app` name. Internal account name `NextcloudDev`, config file `nextclouddev.cfg`, signing team and `com.nextcloud.desktopclient.findertest` app/extension identifiers are retained. First installation aliases sandbox Preferences/hdriveDev to existing Preferences/NextcloudDev rather than copying credentials or resetting File Provider domains. Initial setup prefills hdrive.nl; other servers remain available. Stock automatic updater is disabled for these builds.
+macOS development builds use approved hdrive logo and `hdriveDev.app` name. Internal account name `NextcloudDev`, config file `nextclouddev.cfg`, signing team and `com.nextcloud.desktopclient.findertest` app/extension identifiers are retained. First installation aliases sandbox Preferences/hdriveDev to existing Preferences/NextcloudDev rather than copying credentials or resetting File Provider domains. Finder-facing bundle and registered domain names are `hdrive`; existing domains are updated in place with unchanged identifiers. Initial setup prefills hdrive.nl; other servers remain available. Stock automatic updater is disabled for these builds.
 
 ## Build and update
 

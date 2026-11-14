@@ -11,7 +11,7 @@
 		</dict>
 	</dict>
 	<key>CFBundleDisplayName</key>
-	<string>$(OC_APPLICATION_NAME) File Provider</string>
+	<string>hdrive</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>$(OC_APPLICATION_NAME) File Provider needs access to your local network to connect to Nextcloud servers hosted there.</string>
 	<key>NSAppTransportSecurity</key>

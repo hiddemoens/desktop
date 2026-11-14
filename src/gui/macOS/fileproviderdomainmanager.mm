@@ -34,9 +34,13 @@ Q_LOGGING_CATEGORY(lcMacFileProviderDomainManager, "nextcloud.gui.macfileprovide
 
 }
 
-namespace OCC {
+namespace OCC
+{
 
-namespace Mac {
+namespace Mac
+{
+
+using namespace Qt::StringLiterals;
 
 class FileProviderDomainManager::MacImplementation
 {
@@ -202,7 +206,7 @@ public:
         qCInfo(lcMacFileProviderDomainManager) << "Attempt to reconnect all domains...";
         const auto domains = getDomains();
 
-        for (NSFileProviderDomain * const domain : domains) {
+        for (NSFileProviderDomain *const domain : domains) {
             reconnect(domain);
         }
 
@@ -210,12 +214,7 @@ public:
     }
 
     /**
-     * @brief Update every registered domain's display name to match its account's `shortcutName()`.
-     *
-     * Walks every registered `NSFileProviderDomain`, looks up its owning account, and if the
-     * domain's `displayName` differs from `account->shortcutName()` re-registers the domain
-     * in place by calling `addDomain:` again with the same identifier. macOS replaces the
-     * registration, keeping the on-disk data intact.
+     * @brief Update registered domain display names to hdrive without replacing their identifiers.
      */
     void reconcileDomainDisplayNames()
     {
@@ -224,7 +223,7 @@ public:
         const auto domains = getDomains();
         const auto accountManager = AccountManager::instance();
 
-        for (NSFileProviderDomain * const domain : domains) {
+        for (NSFileProviderDomain *const domain : domains) {
             const auto domainId = QString::fromNSString(domain.identifier);
             const auto accountState = accountManager->accountFromFileProviderDomainIdentifier(domainId);
 
@@ -235,18 +234,17 @@ public:
             }
 
             const auto currentDisplayName = QString::fromNSString(domain.displayName);
-            const auto desiredDisplayName = accountState->account()->shortcutName();
+            const auto desiredDisplayName = u"hdrive"_s;
 
             if (currentDisplayName == desiredDisplayName) {
                 continue;
             }
 
-            qCInfo(lcMacFileProviderDomainManager) << "Updating display name for domain"
-                                                   << domainId
-                                                   << "from" << currentDisplayName
-                                                   << "to" << desiredDisplayName;
+            qCInfo(lcMacFileProviderDomainManager) << "Updating display name for domain" << domainId << "from" << currentDisplayName << "to"
+                                                   << desiredDisplayName;
 
-            NSFileProviderDomain * const updatedDomain = [[NSFileProviderDomain alloc] initWithIdentifier:domain.identifier displayName:desiredDisplayName.toNSString()];
+            NSFileProviderDomain *const updatedDomain = [[NSFileProviderDomain alloc] initWithIdentifier:domain.identifier
+                                                                                             displayName:desiredDisplayName.toNSString()];
             updatedDomain.supportsSyncingTrash = YES;
             addDomain(updatedDomain);
         }
@@ -275,7 +273,7 @@ public:
 
     // MARK: - Legacy
 
-    QString addFileProviderDomain(const AccountState * const accountState)
+    QString addFileProviderDomain(const AccountState *const accountState)
     {
         Q_ASSERT(accountState);
         const auto account = accountState->account();
@@ -283,13 +281,7 @@ public:
 
         const auto accountId = account->userIdAtHostWithPort();
         const auto existingDomainId = account->fileProviderDomainIdentifier();
-        // Use `<server>[:port] - <user>` ordering so the trailing token is the user. This avoids
-        // LaunchServices treating the file provider root folder as a bundle when the server's TLD
-        // matches a recognised package extension like ".app" (see issues #7979 / #9684).
-        // Domains registered with a stale display name (e.g. the legacy U+2024-escaped form, or
-        // a name from before `prettyName()` was updated) are normalised on launch by
-        // `reconcileDomainDisplayNames()`.
-        const auto domainDisplayName = account->shortcutName();
+        const auto domainDisplayName = u"hdrive"_s;
 
         const auto pendingDomainId = _pendingAddIdentifiers.value(accountId);
         auto discoverySucceeded = false;

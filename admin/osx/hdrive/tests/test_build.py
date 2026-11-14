@@ -13,6 +13,16 @@ ROOT = Path(__file__).resolve().parents[4]
 
 
 class BrandingTests(unittest.TestCase):
+    def test_finder_bundle_display_names_use_hdrive(self):
+        import plistlib
+        main = (ROOT / 'cmake/modules/MacOSXBundleInfo.plist.in').read_text()
+        main = main.replace('@MACOSX_BUNDLE_LOCALIZATIONS@', '')
+        self.assertEqual(plistlib.loads(main.encode())['CFBundleDisplayName'], 'hdrive')
+        self.assertEqual(plistlib.loads(main.encode())['CFBundleExecutable'], '@APPLICATION_NAME@')
+        for extension in ['FileProviderExt', 'FileProviderUIExt']:
+            info = plistlib.loads((ROOT / 'shell_integration/MacOSX/NextcloudIntegration' / extension / 'Info.plist').read_bytes())
+            self.assertEqual(info['CFBundleDisplayName'], 'hdrive')
+
     def test_development_branding_preserves_account_identity(self):
         with tempfile.TemporaryDirectory() as temporary:
             script = Path(temporary) / 'branding.cmake'
