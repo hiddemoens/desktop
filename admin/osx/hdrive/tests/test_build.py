@@ -6,6 +6,8 @@ import subprocess
 import tempfile
 import unittest
 import shutil
+import importlib.util
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[4]
 
@@ -55,11 +57,26 @@ class PreparationTests(unittest.TestCase):
             result = subprocess.run(['python3', str(ROOT / 'admin/osx/hdrive/build.py'), '--prepare-only', '--repo', str(repo), '--build-dir', str(state), '--commit', commit], text=True, capture_output=True)
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertNotEqual((state / 'source/NEXTCLOUD.cmake').read_text(), 'uncommitted')
+            self.assertIn('DEVELOPMENT_TEAM "BTQQVL2S6N"', (state / 'source/NEXTCLOUD.cmake').read_text())
+            self.assertIn('APPLICATION_REV_DOMAIN "com.nextcloud.desktopclient.findertest"', (state / 'source/NEXTCLOUD.cmake').read_text())
             import json
             self.assertEqual(json.loads((state / 'source/admin/osx/hdrive/build-info.json').read_text())['commit'], commit)
             self.assertIn('SVG_CONVERTER', (state / 'source/cmake/modules/GenerateIconsUtils.cmake').read_text().splitlines()[0])
             self.assertNotIn('installIfMissing("inkscape"', (state / 'source/admin/osx/mac-crafter/Sources/Commands/Build.swift').read_text())
             self.assertEqual((repo / 'NEXTCLOUD.cmake').read_text(), 'uncommitted')
+
+    def test_failed_build_invalidates_old_artifact_receipt(self):
+        spec = importlib.util.spec_from_file_location('hdrive_build', ROOT / 'admin/osx/hdrive/build.py')
+        builder = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(builder)
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary)
+            receipt = output / 'build-receipt.json'
+            receipt.write_text('old success')
+            with patch.object(builder, 'prepare', side_effect=RuntimeError('failed preparation')):
+                with self.assertRaisesRegex(RuntimeError, 'failed preparation'):
+                    builder.build(ROOT, output, 'HEAD')
+            self.assertFalse(receipt.exists())
 
     def test_refuses_symlink_source_directory(self):
         with tempfile.TemporaryDirectory() as temporary:

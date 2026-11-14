@@ -39,6 +39,7 @@ def prepare(repo, build_dir, commit):
     if source.is_symlink() or build_dir.is_symlink():
         raise RuntimeError('Build/source directory must not be a symlink.')
     build_dir.mkdir(parents=True, exist_ok=True)
+    (build_dir / '.hdrive-build').write_text('hdrive\n')
     revision = git(repo, 'rev-parse', '--verify', commit + '^{commit}')
     with tempfile.TemporaryDirectory(dir=build_dir, prefix='archive-') as temporary:
         archive = Path(temporary) / 'source.tar'
@@ -47,7 +48,11 @@ def prepare(repo, build_dir, commit):
         unpacked.mkdir()
         run('tar', '-xf', archive, '-C', unpacked)
         source.mkdir(exist_ok=True)
-        run('rsync', '-a', '--delete', str(unpacked) + '/', str(source) + '/')
+        run('rsync', '-rplc', '--delete', str(unpacked) + '/', str(source) + '/')
+    # mac-crafter reads these literals directly rather than evaluating CMake includes.
+    branding = source / 'NEXTCLOUD.cmake'
+    replace_once(branding, r'(set\(\s*DEVELOPMENT_TEAM\s+")[^"]+', lambda match: match[1] + 'BTQQVL2S6N')
+    replace_once(branding, r'(set\(\s*APPLICATION_REV_DOMAIN\s+")[^"]+', lambda match: match[1] + BUNDLE_ID)
     converter = shutil.which('rsvg-convert')
     if not converter:
         raise RuntimeError('rsvg-convert is required (existing librsvg installation).')
@@ -65,6 +70,7 @@ def prepare(repo, build_dir, commit):
 
 
 def build(repo, build_dir, commit, prepare_only=False):
+    (build_dir / 'build-receipt.json').unlink(missing_ok=True)
     source = prepare(repo, build_dir, commit)
     if prepare_only:
         print(source)
@@ -105,6 +111,12 @@ exec /usr/bin/codesign "${args[@]}"
         '--code-sign-identity', 'Apple Development', source, env=env)
     app = build_dir / 'product' / (APP_NAME + '.app')
     run('/usr/bin/codesign', '--verify', '--deep', '--strict', app)
+    details = subprocess.check_output(['/usr/bin/codesign', '-dvv', str(app)], stderr=subprocess.STDOUT, text=True)
+    signature = re.search(r'^CDHash=(\w+)$', details, re.M)
+    if not signature:
+        raise RuntimeError('Signed artifact has no CodeDirectory hash.')
+    receipt = {'commit': git(repo, 'rev-parse', commit + '^{commit}'), 'signature': signature[1]}
+    (build_dir / 'build-receipt.json').write_text(json.dumps(receipt) + '\n')
     print(f'Built {app}', flush=True)
     return app
 
