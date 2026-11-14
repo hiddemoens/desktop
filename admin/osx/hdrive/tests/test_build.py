@@ -13,6 +13,29 @@ ROOT = Path(__file__).resolve().parents[4]
 
 
 class BrandingTests(unittest.TestCase):
+    def test_app_icon_has_white_mark_on_blue_background(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / 'icon.png'
+            subprocess.run(['rsvg-convert', '-w', '1024', '-h', '1024', str(ROOT / 'theme/colored/hdrive-icon.svg'), '-o', str(output)], check=True)
+            script = r'''import AppKit
+import Foundation
+let bitmap = NSBitmapImageRep(data: try Data(contentsOf: URL(fileURLWithPath: CommandLine.arguments[1])))!
+var mark = [UInt](repeating: 0, count: 4)
+var blue = [UInt](repeating: 0, count: 4)
+var corner = [UInt](repeating: 0, count: 4)
+bitmap.getPixel(&mark, atX: 300, y: 300)
+bitmap.getPixel(&blue, atX: 150, y: 512)
+bitmap.getPixel(&corner, atX: 0, y: 0)
+if mark != [255, 255, 255, 255] || blue != [0, 147, 169, 255] || corner[3] != 0 {
+    fputs("Expected white mark, brand-blue background and transparent rounded corners\n", stderr)
+    exit(1)
+}
+'''
+            source = Path(temporary) / 'icon.swift'
+            source.write_text(script)
+            result = subprocess.run(['swift', str(source), str(output)], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
     def test_finder_bundle_display_names_use_hdrive(self):
         import plistlib
         main = (ROOT / 'cmake/modules/MacOSXBundleInfo.plist.in').read_text()
