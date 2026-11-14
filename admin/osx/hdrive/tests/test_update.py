@@ -128,7 +128,7 @@ class UpdateTests(unittest.TestCase):
             self.assertTrue((app / 'version').exists())
         updater.install(candidate, apps, state, 'a' * 40, outputs,
                         verify=verify, stop=lambda app: None, start=lambda app: started.append(app))
-        installed = apps / 'hdriveDev.app'
+        installed = apps / 'hdrive.app'
         self.assertEqual((installed / 'version').read_text(), 'new')
         self.assertEqual(started, [installed])
         self.assertFalse(previous.exists())
@@ -223,7 +223,7 @@ class UpdateTests(unittest.TestCase):
         retired = apps / '.hdrive-previous'
         retired.mkdir()
         (retired / 'version').write_text('old')
-        new = apps / 'hdriveDev.app'
+        new = apps / 'hdrive.app'
         new.mkdir()
         (new / 'version').write_text('new')
         state = self.root / 'state'
@@ -245,7 +245,7 @@ class UpdateTests(unittest.TestCase):
         retired = apps / '.hdrive-previous'
         retired.mkdir()
         (retired / 'partial').write_text('partly deleted previous bundle')
-        new = apps / 'hdriveDev.app'
+        new = apps / 'hdrive.app'
         new.mkdir()
         (new / 'version').write_text('new')
         state = self.root / 'state'

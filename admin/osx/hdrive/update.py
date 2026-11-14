@@ -20,9 +20,10 @@ import time
 ROOT = Path(__file__).resolve().parents[3]
 BUNDLE_ID = 'com.nextcloud.desktopclient.findertest'
 TEAM = 'BTQQVL2S6N'
-APP = 'hdriveDev.app'
+BUILT_APP = 'hdriveDev.app'
+APP = 'hdrive.app'
 FIX_BRANCH = 'fix/macos-remove-download'
-CLIENT_APPS = {APP, 'NextcloudDev.app'}
+CLIENT_APPS = {APP, BUILT_APP, 'NextcloudDev.app'}
 
 
 def command(*args, **kwargs):
@@ -291,7 +292,7 @@ def main():
         recover_install(Path('/Applications'), state)
         if args.install_built:
             commit = git(repo, 'rev-parse', args.install_built + '^{commit}')
-            validate_receipt(outputs / 'product' / APP, outputs / 'build-receipt.json', commit)
+            validate_receipt(outputs / 'product' / BUILT_APP, outputs / 'build-receipt.json', commit)
             if not ancestor(repo, commit, 'HEAD') or git(repo, 'branch', '--show-current') != 'hdrive':
                 raise RuntimeError('Requested built commit must belong to current hdrive history.')
         elif args.no_fetch:
@@ -304,7 +305,8 @@ def main():
         installed_file = state / 'installed.json'
         if installed_file.exists():
             installed = json.loads(installed_file.read_text())
-            if installed['commit'] == commit and Path(installed['app']).is_dir():
+            if (installed['commit'] == commit and Path(installed['app']) == Path('/Applications') / APP
+                    and Path(installed['app']).is_dir()):
                 if verify_bundle(Path(installed['app'])) != installed.get('signature'):
                     raise RuntimeError('Installed signature differs from recorded build; rebuild required.')
                 cleanup_bundles(outputs)
@@ -319,14 +321,14 @@ def main():
             command(sys.executable, '-m', 'unittest', 'discover', '-s', repo / 'admin/osx/hdrive/tests', '-v', cwd=repo)
             command(sys.executable, repo / 'admin/osx/hdrive/build.py', '--repo', repo,
                     '--build-dir', outputs, '--commit', commit, cwd=repo)
-        validate_receipt(outputs / 'product' / APP, outputs / 'build-receipt.json', commit)
+        validate_receipt(outputs / 'product' / BUILT_APP, outputs / 'build-receipt.json', commit)
         if git(repo, 'rev-parse', 'HEAD') != checkout_head or git(repo, 'status', '--porcelain'):
             raise RuntimeError('Checkout changed during build; installation stopped.')
         if not args.no_push:
             git(repo, 'push', 'origin', 'HEAD:refs/heads/hdrive')
         preferences = Path.home() / 'Library/Containers' / BUNDLE_ID / 'Data/Library/Preferences'
         prepare_storage(preferences)
-        install(outputs / 'product' / APP, Path('/Applications'), state, commit, outputs)
+        install(outputs / 'product' / BUILT_APP, Path('/Applications'), state, commit, outputs)
         print(f'Installed hdrive {commit[:12]}; restarted app and removed build app copies.')
 
 
