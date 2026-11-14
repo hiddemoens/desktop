@@ -30,7 +30,7 @@ class BrandingTests(unittest.TestCase):
 set(NEXTCLOUD_DEV ON)
 set(CMAKE_SOURCE_DIR "{ROOT}")
 include("{ROOT}/NEXTCLOUD.cmake")
-foreach(pair "APPLICATION_NAME;hdriveDev" "APPLICATION_SHORTNAME;NextcloudDev" "APPLICATION_EXECUTABLE;nextclouddev" "APPLICATION_CONFIG_NAME;nextclouddev" "APPLICATION_REV_DOMAIN;com.nextcloud.desktopclient.findertest" "APPLICATION_ICON_NAME;hdrive" "APPLICATION_SERVER_URL;https://hdrive.nl")
+foreach(pair "APPLICATION_NAME;hdrive" "APPLICATION_SHORTNAME;NextcloudDev" "APPLICATION_EXECUTABLE;nextclouddev" "APPLICATION_CONFIG_NAME;nextclouddev" "APPLICATION_REV_DOMAIN;com.nextcloud.desktopclient.findertest" "APPLICATION_ICON_NAME;hdrive" "APPLICATION_SERVER_URL;https://hdrive.nl")
  list(GET pair 0 key)
  list(GET pair 1 expected)
  if(NOT "${{${{key}}}}" STREQUAL "${{expected}}")
@@ -73,6 +73,7 @@ class PreparationTests(unittest.TestCase):
             self.assertEqual(json.loads((state / 'source/admin/osx/hdrive/build-info.json').read_text())['commit'], commit)
             self.assertIn('SVG_CONVERTER', (state / 'source/cmake/modules/GenerateIconsUtils.cmake').read_text().splitlines()[0])
             self.assertNotIn('installIfMissing("inkscape"', (state / 'source/admin/osx/mac-crafter/Sources/Commands/Build.swift').read_text())
+            self.assertIn('if dev && appName == "Nextcloud"', (state / 'source/admin/osx/mac-crafter/Sources/Commands/Build.swift').read_text())
             self.assertEqual((repo / 'NEXTCLOUD.cmake').read_text(), 'uncommitted')
 
     def test_failed_build_invalidates_old_artifact_receipt(self):

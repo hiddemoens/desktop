@@ -282,7 +282,7 @@ class UpdateTests(unittest.TestCase):
         updater = load_updater()
         import plistlib
         candidate = self.root / 'hdriveDev.app'
-        bundles = [(candidate, updater.BUNDLE_ID, 'hdriveDev')]
+        bundles = [(candidate, updater.BUNDLE_ID, 'hdrive')]
         for extension in ['FileProviderExt', 'FileProviderUIExt']:
             bundles.append((candidate / 'Contents/PlugIns' / (extension + '.appex'), updater.BUNDLE_ID + '.' + extension, extension))
         for bundle, identifier, executable in bundles:
@@ -338,11 +338,11 @@ class UpdateTests(unittest.TestCase):
         existing.mkdir(parents=True)
         (existing / 'nextclouddev.cfg').write_text('account')
         updater.prepare_storage(preferences)
-        self.assertTrue((preferences / 'hdriveDev').is_symlink())
-        self.assertEqual((preferences / 'hdriveDev/nextclouddev.cfg').read_text(), 'account')
+        self.assertTrue((preferences / 'hdrive').is_symlink())
+        self.assertEqual((preferences / 'hdrive/nextclouddev.cfg').read_text(), 'account')
         updater.prepare_storage(preferences)
-        (preferences / 'hdriveDev').unlink()
-        (preferences / 'hdriveDev').mkdir()
+        (preferences / 'hdrive').unlink()
+        (preferences / 'hdrive').mkdir()
         with self.assertRaisesRegex(RuntimeError, 'storage'):
             updater.prepare_storage(preferences)
 

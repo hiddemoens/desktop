@@ -20,10 +20,10 @@ import time
 ROOT = Path(__file__).resolve().parents[3]
 BUNDLE_ID = 'com.nextcloud.desktopclient.findertest'
 TEAM = 'BTQQVL2S6N'
-BUILT_APP = 'hdriveDev.app'
+BUILT_APP = 'hdrive.app'
 APP = 'hdrive.app'
 FIX_BRANCH = 'fix/macos-remove-download'
-CLIENT_APPS = {APP, BUILT_APP, 'NextcloudDev.app'}
+CLIENT_APPS = {APP, 'hdriveDev.app', 'NextcloudDev.app'}
 
 
 def command(*args, **kwargs):
@@ -81,7 +81,7 @@ def verify_bundle(app):
         info = plistlib.load(source)
     if info['CFBundleIdentifier'] != BUNDLE_ID:
         raise RuntimeError('Unexpected app bundle identifier.')
-    if info['CFBundleExecutable'] not in ('hdriveDev', 'NextcloudDev'):
+    if info['CFBundleExecutable'] not in ('hdrive', 'hdriveDev', 'NextcloudDev'):
         raise RuntimeError('Unexpected app executable.')
     command('/usr/bin/codesign', '--verify', '--deep', '--strict', app)
     details = command('/usr/bin/codesign', '-dvvv', app, capture_output=True, text=True).stderr
@@ -100,7 +100,7 @@ def verify_bundle(app):
 
 def prepare_storage(preferences):
     old = preferences / 'NextcloudDev'
-    new = preferences / 'hdriveDev'
+    new = preferences / 'hdrive'
     if new.is_symlink() and new.resolve() == old.resolve():
         return
     if new.exists() or new.is_symlink():

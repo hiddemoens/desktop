@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 Nextcloud GmbH and Nextcloud contributors
 # SPDX-License-Identifier: GPL-2.0-or-later
 
-set(APPLICATION_NAME "hdriveDev")
+set(APPLICATION_NAME "hdrive")
 # These identifiers retain access to existing development accounts and credentials.
 set(APPLICATION_SHORTNAME "NextcloudDev")
 set(APPLICATION_EXECUTABLE "nextclouddev")

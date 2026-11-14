@@ -15,7 +15,7 @@ import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[3]
-APP_NAME = 'hdriveDev'
+APP_NAME = 'hdrive'
 BUNDLE_ID = 'com.nextcloud.desktopclient.findertest'
 
 
@@ -61,6 +61,9 @@ def prepare(repo, build_dir, commit):
     replace_once(source / 'admin/osx/mac-crafter/Sources/Commands/Build.swift',
                  re.escape('try await installIfMissing("inkscape", "brew install inkscape")'),
                  'try await installIfMissing("rsvg-convert", "brew install librsvg")')
+    replace_once(source / 'admin/osx/mac-crafter/Sources/Commands/Build.swift',
+                 r'if dev \{\n            appName \+= "Dev"',
+                 'if dev && appName == "Nextcloud" {\n            appName += "Dev"')
     replace_once(source / 'craftmaster.ini', r'(?m)^Paths/Python = /Users/runner/[^\n]+',
                  'Paths/Python = ' + sys.executable)
     info = source / 'admin/osx/hdrive/build-info.json'
