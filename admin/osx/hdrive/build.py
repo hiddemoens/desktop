@@ -71,6 +71,7 @@ def prepare(repo, build_dir, commit):
 
 def build(repo, build_dir, commit, prepare_only=False):
     (build_dir / 'build-receipt.json').unlink(missing_ok=True)
+    commit = git(repo, 'rev-parse', '--verify', commit + '^{commit}')
     source = prepare(repo, build_dir, commit)
     if prepare_only:
         print(source)
@@ -110,15 +111,22 @@ exec /usr/bin/codesign "${args[@]}"
         '--disable-auto-updater', '--build-file-provider-module',
         '--code-sign-identity', 'Apple Development', source, env=env)
     app = build_dir / 'product' / (APP_NAME + '.app')
+    record_artifact(app, build_dir, commit)
+    print(f'Built {app}', flush=True)
+    return app
+
+
+def record_artifact(app, build_dir, commit):
+    info = json.loads((build_dir / 'source/admin/osx/hdrive/build-info.json').read_text())
+    if info['commit'] != commit:
+        raise RuntimeError('Prepared sources do not match requested artifact commit.')
     run('/usr/bin/codesign', '--verify', '--deep', '--strict', app)
-    details = subprocess.check_output(['/usr/bin/codesign', '-dvv', str(app)], stderr=subprocess.STDOUT, text=True)
+    details = subprocess.check_output(['/usr/bin/codesign', '-dvvv', str(app)], stderr=subprocess.STDOUT, text=True)
     signature = re.search(r'^CDHash=(\w+)$', details, re.M)
     if not signature:
         raise RuntimeError('Signed artifact has no CodeDirectory hash.')
-    receipt = {'commit': git(repo, 'rev-parse', commit + '^{commit}'), 'signature': signature[1]}
+    receipt = {'commit': commit, 'signature': signature[1]}
     (build_dir / 'build-receipt.json').write_text(json.dumps(receipt) + '\n')
-    print(f'Built {app}', flush=True)
-    return app
 
 
 def main():

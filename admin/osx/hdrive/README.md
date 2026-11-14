@@ -41,4 +41,15 @@ Updater restores previous app and restarts it if installation or immediate launc
 
 ## Validation limits
 
-Tests cover source preparation, CMake branding, real temporary Git merges/conflicts, storage alias and installation/rollback/cleanup using isolated app fixtures. Actual build, signature, startup/account-log and installed-icon checks are recorded with deployment handoff. Process startup is checked automatically; Finder upload/download behavior remains a user check. Schedule runs only when laptop and local Codex scheduler are available.
+Tests cover source preparation, CMake branding, real temporary Git merges/conflicts, storage alias and installation/rollback/cleanup using isolated app fixtures. Actual build, signature, startup/account-log and installed-icon checks are recorded with deployment handoff. Process startup is checked automatically; Finder upload/download behavior remains a user check. Native launchd schedule runs in logged-in macOS user session; Codex is not required. Calendar runs missed during sleep run after waking.
+
+
+## Native daily schedule
+
+Install or refresh user LaunchAgent (daily 10:00 local time):
+
+```sh
+python3 admin/osx/hdrive/schedule.py
+```
+
+Agent is `nl.hdrive.desktop-updater`, stored in `~/Library/LaunchAgents/nl.hdrive.desktop-updater.plist`. It invokes Python updater directly, without an AI task. Logs live in `~/Library/Logs/hdrive-updater/`. Inspect `launchctl print gui/$(id -u)/nl.hdrive.desktop-updater`; unload with `launchctl bootout gui/$(id -u)/nl.hdrive.desktop-updater`. Calendar uses laptop time zone. Schedule does not repeatedly retry failures or switch active branch.

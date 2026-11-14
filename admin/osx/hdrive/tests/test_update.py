@@ -257,6 +257,38 @@ class UpdateTests(unittest.TestCase):
         self.assertFalse(retired.exists())
         self.assertFalse((state / 'transaction.json').exists())
 
+    def test_explicit_install_uses_verified_earlier_commit_from_same_branch(self):
+        updater = load_updater()
+        local, _, _ = self.fixture()
+        built = self.git(local, 'rev-parse', 'HEAD~1')
+        outputs = self.root / 'build'
+        outputs.mkdir()
+        (outputs / 'build-receipt.json').write_text(json.dumps({'commit': built, 'signature': 'signed'}))
+        args = ['update.py', '--repo', str(local), '--build-dir', str(outputs), '--state-dir', str(self.root / 'state'), '--install-built', built, '--no-push']
+        with patch.object(sys, 'argv', args), patch.object(updater, 'verify_bundle', return_value='signed'), patch.object(updater, 'recover_install'), patch.object(updater, 'prepare_storage'), patch.object(updater, 'install') as install:
+            updater.main()
+        self.assertEqual(install.call_args.args[3], built)
+        self.assertNotEqual(built, self.git(local, 'rev-parse', 'HEAD'))
+
+    def test_verifier_requests_full_code_directory_hash(self):
+        updater = load_updater()
+        import plistlib
+        candidate = self.root / 'hdriveDev.app'
+        bundles = [(candidate, updater.BUNDLE_ID, 'hdriveDev')]
+        for extension in ['FileProviderExt', 'FileProviderUIExt']:
+            bundles.append((candidate / 'Contents/PlugIns' / (extension + '.appex'), updater.BUNDLE_ID + '.' + extension, extension))
+        for bundle, identifier, executable in bundles:
+            (bundle / 'Contents').mkdir(parents=True)
+            with (bundle / 'Contents/Info.plist').open('wb') as target:
+                plistlib.dump({'CFBundleIdentifier': identifier, 'CFBundleExecutable': executable}, target)
+        def command(*args, **kwargs):
+            details = 'TeamIdentifier=' + updater.TEAM + '\n'
+            if '-dvvv' in args:
+                details += 'CDHash=0123456789abcdef\n'
+            return subprocess.CompletedProcess(args, 0, stdout='', stderr=details)
+        with patch.object(updater, 'command', side_effect=command):
+            self.assertEqual(updater.verify_bundle(candidate), '0123456789abcdef')
+
     def test_stale_product_cannot_use_new_source_commit(self):
         updater = load_updater()
         receipt = self.root / 'build-receipt.json'

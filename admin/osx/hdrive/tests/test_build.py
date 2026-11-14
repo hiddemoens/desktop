@@ -78,6 +78,18 @@ class PreparationTests(unittest.TestCase):
                     builder.build(ROOT, output, 'HEAD')
             self.assertFalse(receipt.exists())
 
+    def test_resolves_head_before_build_starts(self):
+        spec = importlib.util.spec_from_file_location('hdrive_build', ROOT / 'admin/osx/hdrive/build.py')
+        builder = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(builder)
+        with tempfile.TemporaryDirectory() as temporary:
+            def prepare(repo, output, revision):
+                self.assertEqual(revision, 'a' * 40)
+                raise RuntimeError('stop after preparation')
+            with patch.object(builder, 'git', return_value='a' * 40), patch.object(builder, 'prepare', side_effect=prepare):
+                with self.assertRaisesRegex(RuntimeError, 'stop after preparation'):
+                    builder.build(ROOT, Path(temporary), 'HEAD')
+
     def test_refuses_symlink_source_directory(self):
         with tempfile.TemporaryDirectory() as temporary:
             state = Path(temporary)

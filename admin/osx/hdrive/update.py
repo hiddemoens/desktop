@@ -82,7 +82,7 @@ def verify_bundle(app):
     if info['CFBundleExecutable'] not in ('hdriveDev', 'NextcloudDev'):
         raise RuntimeError('Unexpected app executable.')
     command('/usr/bin/codesign', '--verify', '--deep', '--strict', app)
-    details = command('/usr/bin/codesign', '-dvv', app, capture_output=True, text=True).stderr
+    details = command('/usr/bin/codesign', '-dvvv', app, capture_output=True, text=True).stderr
     if f'TeamIdentifier={TEAM}' not in details:
         raise RuntimeError('Unexpected app signing team.')
     for extension in ('FileProviderExt', 'FileProviderUIExt'):
@@ -286,16 +286,20 @@ def main():
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError as error:
             raise RuntimeError('Another hdrive update is running.') from error
+        checkout_head = git(repo, 'rev-parse', 'HEAD')
         recover_install(Path('/Applications'), state)
         if args.install_built:
             commit = git(repo, 'rev-parse', args.install_built + '^{commit}')
             validate_receipt(outputs / 'product' / APP, outputs / 'build-receipt.json', commit)
+            if not ancestor(repo, commit, 'HEAD') or git(repo, 'branch', '--show-current') != 'hdrive':
+                raise RuntimeError('Requested built commit must belong to current hdrive history.')
         elif args.no_fetch:
             if git(repo, 'branch', '--show-current') != 'hdrive' or git(repo, 'status', '--porcelain'):
                 raise RuntimeError('Build requires clean hdrive checkout.')
             commit = git(repo, 'rev-parse', 'HEAD')
         else:
             commit = synchronize(repo)
+            checkout_head = commit
         installed_file = state / 'installed.json'
         if installed_file.exists():
             installed = json.loads(installed_file.read_text())
@@ -315,7 +319,7 @@ def main():
             command(sys.executable, repo / 'admin/osx/hdrive/build.py', '--repo', repo,
                     '--build-dir', outputs, '--commit', commit, cwd=repo)
         validate_receipt(outputs / 'product' / APP, outputs / 'build-receipt.json', commit)
-        if git(repo, 'rev-parse', 'HEAD') != commit or git(repo, 'status', '--porcelain'):
+        if git(repo, 'rev-parse', 'HEAD') != checkout_head or git(repo, 'status', '--porcelain'):
             raise RuntimeError('Checkout changed during build; installation stopped.')
         if not args.no_push:
             git(repo, 'push', 'origin', 'HEAD:refs/heads/hdrive')
